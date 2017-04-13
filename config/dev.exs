@@ -50,9 +50,4 @@ config :phoenix, :stacktrace_depth, 20
 
 # Configure your database
 config :rephink, Rephink.Repo,
-  adapter: Ecto.Adapters.Postgres,
-  username: "postgres",
-  password: "postgres",
-  database: "rephink_dev",
-  hostname: "localhost",
-  pool_size: 10
+  [port: 28015, host: "localhost", database: "rephink", db: "rephink"]
