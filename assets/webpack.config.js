@@ -1,7 +1,9 @@
 var resolve = require('path').resolve;
+var ExtractTextPlugin = require('extract-text-webpack-plugin');
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
-  entry: "./js/app.js",
+  entry: ['./js/app.js', './css/app.css'],
   output: {
     path: resolve('./../priv/static'),
     filename: 'js/app.js'
@@ -14,8 +16,16 @@ module.exports = {
       options: {
         presets: ['es2015']
       }
+    },
+    {
+      test: /\.css$/,
+      loader: ExtractTextPlugin.extract({fallback: 'style-loader', use: 'css-loader'})
     }]
   },
+  plugins: [
+    new ExtractTextPlugin('css/app.css'),
+    new CopyWebpackPlugin([{from: './static'}])
+  ],
   resolve: {
     modules: ['node_modules', resolve('./../deps')]
   }
