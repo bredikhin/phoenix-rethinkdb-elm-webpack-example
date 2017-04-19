@@ -20,6 +20,11 @@ module.exports = {
     {
       test: /\.css$/,
       loader: ExtractTextPlugin.extract({fallback: 'style-loader', use: 'css-loader'})
+    },
+    {
+      test: /\.elm$/,
+      exclude: [/elm-stuff/, /node_modules/],
+      loader:  'elm-webpack-loader?cwd=' + resolve('./../elm'),
     }]
   },
   plugins: [

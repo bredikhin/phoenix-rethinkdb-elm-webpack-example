@@ -19,3 +19,14 @@ import "phoenix_html"
 // paths "./socket" or full ones "web/static/js/socket".
 
 // import socket from "./socket"
+
+// Elm application
+let Elm = require('../../elm/Todo.elm')
+let storedState = localStorage.getItem('elm-todo-save')
+let startingState = storedState ? JSON.parse(storedState) : null
+let todomvc = Elm.Todo.fullscreen(startingState)
+todomvc.ports.setStorage.subscribe((state) => {
+    localStorage.setItem('elm-todo-save', JSON.stringify(state))
+})
+
+
