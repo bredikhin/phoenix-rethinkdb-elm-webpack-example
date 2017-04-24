@@ -1,4 +1,4 @@
-port module Todo exposing (..)
+module Todo exposing (..)
 
 {-| TodoMVC implemented in Elm, using plain HTML and CSS for rendering.
 
@@ -22,33 +22,14 @@ import Json.Decode as Json
 import String
 import Task
 
-
-main : Program (Maybe Model) Model Msg
+main : Program Never Model Msg
 main =
-    Html.programWithFlags
+    Html.program
         { init = init
         , view = view
-        , update = updateWithStorage
+        , update = update
         , subscriptions = \_ -> Sub.none
         }
-
-
-port setStorage : Model -> Cmd msg
-
-
-{-| We want to `setStorage` on every update. This function adds the setStorage
-command for every step of the update function.
--}
-updateWithStorage : Msg -> Model -> ( Model, Cmd Msg )
-updateWithStorage msg model =
-    let
-        ( newModel, cmds ) =
-            update msg model
-    in
-        ( newModel
-        , Cmd.batch [ setStorage newModel, cmds ]
-        )
-
 
 
 -- MODEL
@@ -89,9 +70,9 @@ newEntry desc id =
     }
 
 
-init : Maybe Model -> ( Model, Cmd Msg )
-init savedModel =
-    Maybe.withDefault emptyModel savedModel ! []
+init : ( Model, Cmd Msg )
+init =
+    emptyModel ! []
 
 
 
