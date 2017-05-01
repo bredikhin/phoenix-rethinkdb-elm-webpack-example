@@ -2,7 +2,7 @@ defmodule Rephink.Web.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", Rephink.Web.RoomChannel
+  channel "todo:*", Rephink.Web.TodoChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket

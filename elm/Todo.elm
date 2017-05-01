@@ -21,6 +21,11 @@ import Html.Lazy exposing (lazy, lazy2)
 import Json.Decode as Json
 import String
 import Task
+import Phoenix.Socket
+import Phoenix.Channel
+import Phoenix.Push
+import Json.Encode as Encode
+import Debug exposing (log)
 
 main : Program Never Model Msg
 main =
@@ -28,7 +33,7 @@ main =
         { init = init
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
+        , subscriptions = subscriptions
         }
 
 
@@ -41,6 +46,7 @@ type alias Model =
     , field : String
     , uid : Int
     , visibility : String
+    , socket : Phoenix.Socket.Socket Msg
     }
 
 
@@ -49,15 +55,6 @@ type alias Entry =
     , completed : Bool
     , editing : Bool
     , id : Int
-    }
-
-
-emptyModel : Model
-emptyModel =
-    { entries = []
-    , visibility = "All"
-    , field = ""
-    , uid = 0
     }
 
 
@@ -72,7 +69,21 @@ newEntry desc id =
 
 init : ( Model, Cmd Msg )
 init =
-    emptyModel ! []
+    let
+        channelName = "todo:list"
+        channel = Phoenix.Channel.init channelName
+            |> Phoenix.Channel.onJoin (always RequestEntries)
+        socketInit = Phoenix.Socket.init "ws://localhost:4000/socket/websocket"
+            |> Phoenix.Socket.on "pong" channelName ReceiveEntries
+        ( socket, cmd ) =
+            Phoenix.Socket.join channel socketInit
+    in
+        { entries = []
+        , visibility = "All"
+        , field = ""
+        , uid = 0
+        , socket = socket
+        } ! [ Cmd.map SocketMsg cmd ]
 
 
 
@@ -94,6 +105,9 @@ type Msg
     | Check Int Bool
     | CheckAll Bool
     | ChangeVisibility String
+    | SocketMsg (Phoenix.Socket.Msg Msg)
+    | RequestEntries
+    | ReceiveEntries Encode.Value
 
 
 
@@ -176,6 +190,28 @@ update msg model =
             { model | visibility = visibility }
                 ! []
 
+        SocketMsg msg ->
+            let
+                ( socket, cmd ) =
+                    Phoenix.Socket.update msg model.socket
+            in
+                { model | socket = socket } ! [ Cmd.map SocketMsg cmd ]
+
+        RequestEntries ->
+            let
+                push =
+                    Phoenix.Push.init "ping" "todo:list"
+                        |> Phoenix.Push.onOk ReceiveEntries
+                ( socket, cmd ) =
+                    Phoenix.Socket.push push model.socket
+            in
+                { model | socket = socket } ! [ Cmd.map SocketMsg cmd ]
+
+        ReceiveEntries raw ->
+            let
+                entries = log "Ping" raw
+            in
+                model ! []
 
 
 -- VIEW
@@ -402,3 +438,11 @@ infoFooter =
             , a [ href "http://todomvc.com" ] [ text "TodoMVC" ]
             ]
         ]
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Phoenix.Socket.listen model.socket SocketMsg
