@@ -17,7 +17,7 @@ defmodule Rephink.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {Rephink.Application, []},
-     extra_applications: [:logger, :runtime_tools]]
+     extra_applications: [:logger, :runtime_tools, :rethinkdb]]
   end
 
   # Specifies which paths to compile per environment.

@@ -74,7 +74,7 @@ init =
         channel = Phoenix.Channel.init channelName
             |> Phoenix.Channel.onJoin (always RequestEntries)
         socketInit = Phoenix.Socket.init "ws://localhost:4000/socket/websocket"
-            |> Phoenix.Socket.on "pong" channelName ReceiveEntries
+            |> Phoenix.Socket.on "todos" channelName ReceiveEntries
         ( socket, cmd ) =
             Phoenix.Socket.join channel socketInit
     in
@@ -200,7 +200,7 @@ update msg model =
         RequestEntries ->
             let
                 push =
-                    Phoenix.Push.init "ping" "todo:list"
+                    Phoenix.Push.init "todos" "todo:list"
                         |> Phoenix.Push.onOk ReceiveEntries
                 ( socket, cmd ) =
                     Phoenix.Socket.push push model.socket
@@ -209,9 +209,26 @@ update msg model =
 
         ReceiveEntries raw ->
             let
-                entries = log "Ping" raw
+                decoded =
+                    Json.decodeValue
+                        ( Json.field "todos"
+                            ( Json.list
+                                ( Json.map4
+                                    Entry
+                                    (Json.field "task" Json.string)
+                                    (Json.field "completed" Json.bool)
+                                    (Json.succeed False)
+                                    (Json.field "id" Json.int)
+                                )
+                            )
+                        )
+                        raw
             in
-                model ! []
+                case decoded of
+                    Ok entries ->
+                        { model | entries = entries } ! []
+                    Err error ->
+                        model ! []
 
 
 -- VIEW

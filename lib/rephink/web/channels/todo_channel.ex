@@ -1,5 +1,6 @@
 defmodule Rephink.Web.TodoChannel do
   use Rephink.Web, :channel
+  import RethinkDB.Query
 
   def join("todo:list", payload, socket) do
     if authorized?(payload) do
@@ -9,8 +10,11 @@ defmodule Rephink.Web.TodoChannel do
     end
   end
 
-  def handle_in("ping", _payload, socket) do
-    Rephink.Web.Endpoint.broadcast!(socket.topic, "pong", %{"response" => "pong"})
+  @table_name "todos"
+
+  def handle_in("todos", _payload, socket) do
+    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
+    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
 
     {:noreply, socket}
   end
