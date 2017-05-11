@@ -119,16 +119,26 @@ update msg model =
             model ! []
 
         Add ->
-            { model
-                | uid = model.uid + 1
-                , field = ""
-                , entries =
-                    if String.isEmpty model.field then
-                        model.entries
-                    else
-                        model.entries ++ [ newEntry model.field model.uid ]
-            }
-                ! []
+            let
+                payload =
+                    Encode.object
+                        [ ( "todo", Encode.object
+                            [ ("task", Encode.string model.field)
+                            , ("id", Encode.int (model.uid + 1))
+                            , ("completed", Encode.bool False)
+                            ]
+                          )
+                        ]
+
+                push =
+                    Phoenix.Push.init "insert" "todo:list"
+                        |> Phoenix.Push.withPayload payload
+
+                ( socket, cmd ) =
+                    Phoenix.Socket.push push model.socket
+            in
+                { model | socket = socket, field = "" }
+                    ! [ Cmd.map SocketMsg cmd ]
 
         UpdateField str ->
             { model | field = str }
@@ -223,10 +233,11 @@ update msg model =
                             )
                         )
                         raw
+                nextId xs = List.foldl (\x y->if x.id > y then x.id else y) 0 xs
             in
                 case decoded of
                     Ok entries ->
-                        { model | entries = entries } ! []
+                        { model | entries = entries, uid = nextId entries } ! []
                     Err error ->
                         model ! []
 
