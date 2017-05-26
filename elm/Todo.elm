@@ -99,6 +99,7 @@ type Msg
     | UpdateField String
     | EditingEntry Int Bool
     | UpdateEntry Int String
+    | SyncEntry Int
     | Add
     | Delete Int
     | DeleteComplete
@@ -154,9 +155,43 @@ update msg model =
 
                 focus =
                     Dom.focus ("todo-" ++ toString id)
+
+                (updatedModel, cmd) =
+                    if (not isEditing) then
+                        update (SyncEntry id) model
+                    else
+                        (model, Cmd.none)
             in
-                { model | entries = List.map updateEntry model.entries }
-                    ! [ Task.attempt (\_ -> NoOp) focus ]
+                { updatedModel | entries = List.map updateEntry updatedModel.entries }
+                    ! [ Task.attempt (\_ -> NoOp) focus, cmd ]
+
+        SyncEntry id ->
+            let
+                edited = List.head (List.filter (\x -> x.id == id) model.entries)
+                ( socket, cmd ) =
+                    case edited of
+                        Nothing -> (model.socket, Cmd.none)
+                        Just entry ->
+                            let
+                                payload =
+                                    Encode.object
+                                        [ ( "todo", Encode.object
+                                            [ ("task", Encode.string entry.description)
+                                            , ("id", Encode.int entry.id)
+                                            , ("completed", Encode.bool entry.completed)
+                                            ]
+                                          )
+                                        ]
+
+                                push =
+                                    Phoenix.Push.init "update" "todo:list"
+                                        |> Phoenix.Push.withPayload payload
+
+                          in
+                              Phoenix.Socket.push push model.socket
+            in
+                { model | socket = socket }
+                    ! [ Cmd.map SocketMsg cmd ]
 
         UpdateEntry id task ->
             let
