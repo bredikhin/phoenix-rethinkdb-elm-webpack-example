@@ -219,17 +219,25 @@ update msg model =
                         { t | completed = isCompleted }
                     else
                         t
+                updatedModel = { model | entries = List.map updateEntry model.entries }
             in
-                { model | entries = List.map updateEntry model.entries }
-                    ! []
+                update (SyncEntry id) updatedModel
 
         CheckAll isCompleted ->
             let
                 updateEntry t =
                     { t | completed = isCompleted }
+                allCheckedModel = { model | entries = List.map updateEntry model.entries }
+                syncEntry t (model, cmdList) =
+                    let
+                        (updatedModel, newCmd) = update (SyncEntry t.id) model
+                    in
+                        (updatedModel, List.append cmdList [ newCmd ])
+                (updatedModel, cmdList) = List.foldr
+                    syncEntry (allCheckedModel, [])
+                    allCheckedModel.entries
             in
-                { model | entries = List.map updateEntry model.entries }
-                    ! []
+                updatedModel ! cmdList
 
         ChangeVisibility visibility ->
             { model | visibility = visibility }
