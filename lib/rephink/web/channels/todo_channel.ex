@@ -39,6 +39,17 @@ defmodule Rephink.Web.TodoChannel do
     {:noreply, socket}
   end
 
+  def handle_in("delete", %{"todo" => todo}, socket) do
+    table(@table_name)
+      |> get(todo["id"])
+      |> delete()
+      |> RethinkDB.run(Rephink.DB)
+    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
+    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
+
+    {:noreply, socket}
+  end
+
   defp authorized?(_payload) do
     true
   end

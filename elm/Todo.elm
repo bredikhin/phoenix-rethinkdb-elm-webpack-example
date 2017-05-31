@@ -205,12 +205,42 @@ update msg model =
                     ! []
 
         Delete id ->
-            { model | entries = List.filter (\t -> t.id /= id) model.entries }
-                ! []
+            let
+                deleted = List.head (List.filter (\x -> x.id == id) model.entries)
+                ( socket, cmd ) =
+                    case deleted of
+                        Nothing -> (model.socket, Cmd.none)
+                        Just entry ->
+                            let
+                                payload =
+                                    Encode.object
+                                        [ ( "todo", Encode.object
+                                            [ ("id", Encode.int entry.id) ]
+                                          )
+                                        ]
+
+                                push =
+                                    Phoenix.Push.init "delete" "todo:list"
+                                        |> Phoenix.Push.withPayload payload
+
+                          in
+                              Phoenix.Socket.push push model.socket
+            in
+                { model | socket = socket }
+                    ! [ Cmd.map SocketMsg cmd ]
 
         DeleteComplete ->
-            { model | entries = List.filter (not << .completed) model.entries }
-                ! []
+            let
+                deleteEntry t (model, cmdList) =
+                    let
+                        (updatedModel, newCmd) = update (Delete t.id) model
+                    in
+                        (updatedModel, List.append cmdList [ newCmd ])
+                (updatedModel, cmdList) = List.foldr
+                    deleteEntry (model, [])
+                    (List.filter .completed model.entries)
+            in
+                updatedModel ! cmdList
 
         Check id isCompleted ->
             let
