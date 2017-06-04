@@ -17,7 +17,7 @@ defmodule Rephink.Mixfile do
   # Type `mix help compile.app` for more information.
   def application do
     [mod: {Rephink.Application, []},
-     extra_applications: [:logger, :runtime_tools, :rethinkdb]]
+     extra_applications: [:logger, :runtime_tools, :rethinkdb, :rethinkdb_changefeed]]
   end
 
   # Specifies which paths to compile per environment.
@@ -35,7 +35,8 @@ defmodule Rephink.Mixfile do
      {:phoenix_live_reload, "~> 1.0", only: :dev},
      {:gettext, "~> 0.11"},
      {:cowboy, "~> 1.0"},
-     {:rethinkdb_ecto, "~> 0.6.2"}]
+     {:rethinkdb_ecto, "~> 0.6.2"},
+     {:rethinkdb_changefeed, "~> 0.0.1"}]
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

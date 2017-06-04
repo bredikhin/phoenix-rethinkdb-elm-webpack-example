@@ -14,6 +14,7 @@ defmodule Rephink.Application do
       supervisor(Rephink.Web.Endpoint, []),
       # Start your own worker by calling: Rephink.Worker.start_link(arg1, arg2, arg3)
       worker(Rephink.DB, [Application.get_env(:rephink, Rephink.Repo)]),
+      worker(Rephink.Changefeed, [Rephink.DB]),
     ]
 
     # See http://elixir-lang.org/docs/stable/elixir/Supervisor.html
