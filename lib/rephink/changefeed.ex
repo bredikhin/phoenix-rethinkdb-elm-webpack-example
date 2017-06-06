@@ -33,4 +33,35 @@ defmodule Rephink.Changefeed do
 
     {:next, {db, todos}}
   end
+
+  def handle_call(:todos, _from, {db, todos}) do
+    Rephink.Web.Endpoint.broadcast!(@topic, @table_name, %{todos: Map.values(todos)})
+
+    {:reply, Map.values(todos), {db, todos}}
+  end
+
+  def handle_call({:insert, todo}, _from, {db, todos}) do
+    table(@table_name)
+      |> insert(todo)
+      |> RethinkDB.run(db)
+
+    {:reply, Map.values(todos), {db, todos}}
+  end
+
+  def handle_call({:update, todo}, _from, {db, todos}) do
+    table(@table_name)
+      |> update(todo)
+      |> RethinkDB.run(db)
+
+    {:reply, Map.values(todos), {db, todos}}
+  end
+
+  def handle_call({:delete, todo}, _from, {db, todos}) do
+    table(@table_name)
+      |> filter(todo)
+      |> delete()
+      |> RethinkDB.run(db)
+
+    {:reply, Map.values(todos), {db, todos}}
+  end
 end

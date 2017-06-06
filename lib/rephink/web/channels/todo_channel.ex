@@ -1,6 +1,6 @@
 defmodule Rephink.Web.TodoChannel do
   use Rephink.Web, :channel
-  import RethinkDB.Query
+  alias RethinkDB.Changefeed
 
   def join("todo:list", payload, socket) do
     if authorized?(payload) do
@@ -10,42 +10,26 @@ defmodule Rephink.Web.TodoChannel do
     end
   end
 
-  @table_name "todos"
-
   def handle_in("todos", _payload, socket) do
-    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
-    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
+    Changefeed.call(Rephink.Changefeed, :todos)
 
     {:noreply, socket}
   end
 
   def handle_in("insert", %{"todo" => todo}, socket) do
-    table(@table_name)
-      |> insert(todo)
-      |> RethinkDB.run(Rephink.DB)
-    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
-    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
+    Changefeed.call(Rephink.Changefeed, {:insert, todo})
 
     {:noreply, socket}
   end
 
   def handle_in("update", %{"todo" => todo}, socket) do
-    table(@table_name)
-      |> update(todo)
-      |> RethinkDB.run(Rephink.DB)
-    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
-    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
+    Changefeed.call(Rephink.Changefeed, {:update, todo})
 
     {:noreply, socket}
   end
 
   def handle_in("delete", %{"todo" => todo}, socket) do
-    table(@table_name)
-      |> get(todo["id"])
-      |> delete()
-      |> RethinkDB.run(Rephink.DB)
-    %{data: todos} = table(@table_name) |> RethinkDB.run(Rephink.DB)
-    Rephink.Web.Endpoint.broadcast!(socket.topic, "todos", %{todos: todos})
+    Changefeed.call(Rephink.Changefeed, {:delete, todo})
 
     {:noreply, socket}
   end
