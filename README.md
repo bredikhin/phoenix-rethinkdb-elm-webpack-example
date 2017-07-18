@@ -1252,6 +1252,14 @@ means that if you start your Phoenix server now and, for example, open the
 application in two browser tabs simultaneously then updating something in one
 tab will automatically update the other one. Yes, do see it for yourself.
 
+It's interesting that in this particular case when we only have one topic common
+for all the users, simple broadcasting to the channel on any update would do the
+trick, however in more elaborate cases different users should be subscribed to
+receive different set of entries. Besides, the database content can also be
+modified via other applications / tools (you can try updating one of your
+entries directly using RethinkDB admin console at http://localhost:8080/, for
+example), and that's where our database subscription really shines.
+
 Although at this point we're basically reached our goal, let's apply one final
 touch in order to improve the structure of our code. We're going to move the
 database interactions out of our channel code, which will let us use our
